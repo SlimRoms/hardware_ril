@@ -26,6 +26,10 @@ LOCAL_MODULE:= libril
 
 LOCAL_LDLIBS += -lpthread
 
+ifeq ($(BOARD_USES_LEGACY_RIL),true)
+LOCAL_CFLAGS += -DLEGACY_RIL
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 
