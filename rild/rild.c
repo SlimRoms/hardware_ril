@@ -1,8 +1,6 @@
 /* //device/system/rild/rild.c
 **
-** Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
-** Not a Contribution
-** Copyright 2006 The Android Open Source Project
+** Copyright 2006, The Android Open Source Project
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -122,9 +120,6 @@ int main(int argc, char **argv)
     unsigned char hasLibArgs = 0;
 
     int i;
-    const char *clientId = NULL;
-    RLOGD("**RIL Daemon Started**");
-    RLOGD("**RILd param count=%d**", argc);
 
     umask(S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
     for (i = 1; i < argc ;) {
@@ -135,29 +130,10 @@ int main(int argc, char **argv)
             i++;
             hasLibArgs = 1;
             break;
-        } else if (0 == strcmp(argv[i], "-c") &&  (argc - i > 1)) {
-            clientId = argv[i+1];
-            i += 2;
         } else {
             usage(argv[0]);
         }
     }
-
-#ifdef QCOM_HARDWARE
-    if (clientId == NULL) {
-        clientId = "0";
-    } else if (atoi(clientId) >= MAX_RILDS) {
-        RLOGE("Max Number of rild's supported is: %d", MAX_RILDS);
-        exit(0);
-    }
-    if (strncmp(clientId, "0", MAX_CLIENT_ID_LENGTH)) {
-        if (RIL_setRilSocketName) {
-            RIL_setRilSocketName(clientId);
-        } else {
-            RLOGE("Trying to instantiate multiple rild sockets without a compatible libril!");
-        }
-    }
-#endif
 
     if (rilLibPath == NULL) {
         if ( 0 == property_get(LIB_PATH_PROPERTY, libPath, NULL)) {
@@ -172,7 +148,7 @@ int main(int argc, char **argv)
     /* special override when in the emulator */
 #if 1
     {
-        static char*  arg_overrides[5];
+        static char*  arg_overrides[3];
         static char   arg_device[32];
         int           done = 0;
 
@@ -304,12 +280,6 @@ OpenLib:
         property_get(LIB_ARGS_PROPERTY, args, "");
         argc = make_argv(args, rilArgv);
     }
-
-#ifdef QCOM_HARDWARE
-    rilArgv[argc++] = "-c";
-    rilArgv[argc++] = clientId;
-    RLOGD("RIL_Init argc = %d clientId = %s", argc, rilArgv[argc-1]);
-#endif
 
     // Make sure there's a reasonable argv[0]
     rilArgv[0] = argv[0];

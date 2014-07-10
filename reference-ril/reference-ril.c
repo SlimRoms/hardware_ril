@@ -1,8 +1,6 @@
 /* //device/system/reference-ril/reference-ril.c
 **
-** Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
-** Not a Contribution
-** Copyright 2006 The Android Open Source Project
+** Copyright 2006, The Android Open Source Project
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -201,7 +199,6 @@ static pthread_cond_t s_state_cond = PTHREAD_COND_INITIALIZER;
 static int s_port = -1;
 static const char * s_device_path = NULL;
 static int          s_device_socket = 0;
-const char * ril_inst_id = NULL;
 
 /* trigger change to this with s_state_cond */
 static int s_closed = 0;
@@ -764,36 +761,6 @@ static void requestGetCurrentCalls(void *data, size_t datalen, RIL_Token t)
 error:
     RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
     at_response_free(p_response);
-}
-
-static void setUiccSubscription(int request, void *data, size_t datalen, RIL_Token t)
-{
-    RIL_SelectUiccSub *uiccSubscrInfo;
-    uiccSubscrInfo = (RIL_SelectUiccSub *)data;
-    int response = 0;
-
-    RLOGD("setUiccSubscription() RILD=%s instance.", ril_inst_id);
-    // TODO: DSDS: Need to implement this.
-    // workaround: send success for now.
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
-
-    if (uiccSubscrInfo->act_status == RIL_UICC_SUBSCRIPTION_ACTIVATE) {
-        RLOGD("setUiccSubscription() : Activate Request: sending SUBSCRIPTION_STATUS_CHANGED");
-        response = 1; // ACTIVATED
-        RIL_onUnsolicitedResponse (
-            RIL_UNSOL_UICC_SUBSCRIPTION_STATUS_CHANGED,
-            &response, sizeof(response));
-    } else {
-        RLOGD("setUiccSubscriptionSource() : Deactivate Request");
-    }
-}
-
-static void setDataSubscription(int request, void *data, size_t datalen, RIL_Token t)
-{
-    RLOGD("setDataSubscriptionSource()") ;
-    // TODO: DSDS: Need to implement this.
-    // workaround: send success for now.
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
 }
 
 static void requestDial(void *data, size_t datalen, RIL_Token t)
@@ -2366,14 +2333,6 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             requestSetCellInfoListRate(data, datalen, t);
             break;
 
-        case RIL_REQUEST_SET_UICC_SUBSCRIPTION:
-            setUiccSubscription(request, data, datalen, t);
-            break;
-
-        case RIL_REQUEST_SET_DATA_SUBSCRIPTION:
-            setDataSubscription(request, data, datalen, t);
-            break;
-
         /* CDMA Specific Requests */
         case RIL_REQUEST_BASEBAND_VERSION:
             if (TECH_BIT(sMdmInfo) == MDM_CDMA) {
@@ -3335,14 +3294,8 @@ mainLoop(void *param)
                      * now another "legacy" way of communicating with the
                      * emulator), we will try to connecto to gsm service via
                      * qemu pipe. */
-                    char qemuPipe[MAX_QEMU_PIPE_NAME_LENGTH] = "qemud:gsm";
-                    if (ril_inst_id != NULL
-                    		&& strlen(ril_inst_id) <= MAX_CLIENT_ID_LENGTH ) {
-                        strncat(qemuPipe, ril_inst_id ,MAX_QEMU_PIPE_NAME_LENGTH);
-                    }
-                    RLOGD("qemu pipe name : %s\n", qemuPipe);
-                    fd = qemu_pipe_open(qemuPipe);
 
+                    fd = qemu_pipe_open("qemud:gsm");
                     if (fd < 0) {
                         /* Qemu-specific control socket */
                         fd = socket_local_client( "qemud",
@@ -3415,7 +3368,7 @@ const RIL_RadioFunctions *RIL_Init(const struct RIL_Env *env, int argc, char **a
 
     s_rilenv = env;
 
-    while ( -1 != (opt = getopt(argc, argv, "p:d:s:c:"))) {
+    while ( -1 != (opt = getopt(argc, argv, "p:d:s:"))) {
         switch (opt) {
             case 'p':
                 s_port = atoi(optarg);
@@ -3435,11 +3388,6 @@ const RIL_RadioFunctions *RIL_Init(const struct RIL_Env *env, int argc, char **a
                 s_device_path   = optarg;
                 s_device_socket = 1;
                 RLOGI("Opening socket %s\n", s_device_path);
-            break;
-
-            case 'c':
-                ril_inst_id = optarg;
-                RLOGI("ReferRil is using instance %s ", ril_inst_id);
             break;
 
             default:
