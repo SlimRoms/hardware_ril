@@ -88,6 +88,12 @@ class RilSapSocket : public RilSocket {
         RIL_RadioFunctions *uimFuncs);
 
         /**
+         * Process requests from the dispatch request queue.
+         * @param Request to be dispatched.
+         */
+        int processRequest(MsgHeader *request);
+
+        /**
          * Ril envoronment variable that holds the request and
          * unsol response handlers.
          */
@@ -208,8 +214,8 @@ class RilSapSocket : public RilSocket {
         RIL_RadioFunctions *inputUimFuncs);
 
         /**
-         * Dispatches the request to the lower layers.
-         * It calls the on request function.
+         * Called by the processRequest method to dispatch the request to
+         * the lower layers. It calls the on request function.
          *
          * @param The request message.
          */
